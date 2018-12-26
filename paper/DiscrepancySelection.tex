@@ -1,0 +1,508 @@
+\documentclass[preprint,review,12pt,3p]{elsarticle}
+
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{epsfig}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{subfigure}
+\usepackage{setspace}
+\usepackage{booktabs}
+\usepackage{multirow}
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+
+\usepackage{hyperref}
+\hypersetup{colorlinks=false}
+
+
+\doublespacing
+\biboptions{sort&compress} 
+
+\journal{Journal of Computational Physics}
+
+\begin{document}
+\begin{frontmatter}
+\title{Selection of model discrepancy priors in Bayesian calibration}
+\author{You Ling, Joshua Mullins, and Sankaran Mahadevan\corref{corauthor}}
+\address{Department of Civil and Environmental Engineering, Vanderbilt University, TN 37235}
+\cortext[corauthor]{Corresponding author\\Phone: 1-615-322-3040. Fax: 1-615-322-3365. Email: sankaran.mahadevan@vanderbilt.edu. Postal address: Vanderbilt University, VU Station B 356077, Nashville, TN 37235-6077}
+
+\begin{abstract}
+In the Kennedy and O'Hagan framework for Bayesian calibration of physics models, selection of an appropriate prior form for the model discrepancy function is a challenging issue due to the lack of physics knowledge regarding model inadequacy. Aiming to address the uncertainty arising from the selection of a particular prior, this paper first conducts a study on possible formulations of the model discrepancy function. A first-order Taylor series expansion-based method is developed to investigate the potential redundancy caused by adding a discrepancy function to the original physics model. Further, we propose a three-step (calibration, validation, and combination) approach in order to inform the decision on the construction of model discrepancy priors. In the validation step, a reliability-based metric is used to evaluate posterior model predictions in the validation domain. The validation metric serves as a quantitative measure of how well the discrepancy formulation captures the missing physics in the model. In the combination step, the posterior distributions of model parameters and discrepancy corresponding to different priors are combined into a single distribution based on the probabilistic weights derived from the validation step. The combined distribution acknowledges the uncertainty in the prior formulation of model discrepancy function.
+\end{abstract}
+
+\begin{keyword}
+Bayesian calibration \sep  model uncertainty \sep  identifiability \sep  validation 
+\end{keyword}
+
+\end{frontmatter}
+
+%%---------------------------------------------------------------------------------------------
+\section{Introduction}\label{section:introduction}
+
+Model calibration is the process of adjusting unknown model parameters in order to improve the agreement between model output and observed data~\citep{Campbell2006}, and it is a widely used technique in the analysis of engineering systems~\citep{McFarland2008}. Kennedy and O'Hagan~\citep{Kennedy2001a} developed a Bayesian calibration framework (referred to as the KOH framework) to include various sources of uncertainty. One of the main features of this framework is the use of a model discrepancy function to explicitly account for the uncertainty due to model inadequacy. It has been shown that by including an appropriate model discrepancy function in calibration, bias and overfitting in the estimation of physical parameters can be mitigated or avoided~\citep{Brynjarsdottir2013}. Based on the KOH framework, efficient and rigorous calibration methods have been developed for realistic problems~\citep{Higdon2008,Koutsourelakis2009,Arendt2012,Ling2013a}, and practical applications can be found in many areas of science and engineering, such as environmental management~\citep{Arhonditsis2008}, heat transfer~\citep{McFarland2008a}, astronomy~\citep{Bower2010}, hydrology~\citep{Renard2010}, geochemistry~\citep{Sarkar2012}, fatigue~\citep{Sankararaman2011}, and aerothermal modeling~\citep{DeCarlo2013}. 
+
+Despite the extensive development of calibration methods and applications, the formulation of the model discrepancy function remains a challenging issue. As shown by Brynjarsdottir and O'Hagan~\citep{Brynjarsdottir2013}, the calibration results may not be satisfying if the prior assumption of discrepancy does not capture the effect of missing physics in the model. Moreover, the addition of a discrepancy term to the physics model may sometimes lead to parameter non-identifiability~\citep{Renard2010,Arendt2012,Ling2013a}. Several different prior assumptions of model discrepancy have been used in previous studies, including constant bias~\citep{Arhonditsis2008}, physics-based deterministic function~\citep{DeCarlo2013}, Gaussian random variable~\citep{Renard2010,Sankararaman2011,Sarkar2012,Koutsourelakis2009,Park2010,Riley2011}, uncorrelated random vector~\citep{Bower2010}, random walk~\citep{Arhonditsis2008}, and Gaussian random process~\citep{McFarland2008a,Higdon2008,Arendt2012}. However, a rigorous comparison between these different prior formulations of model discrepancy has not been conducted, and a general guideline for choosing the appropriate formulation is not currently available. 
+ 
+In this paper, we will investigate Bayesian calibration with five different prior formulations of model discrepancy function: (1) constant, (2) Gaussian random variable with fixed mean and variance, (3) Gaussian random variable with input-dependent mean and variance, (4) Gaussian random process with stationary covariance function, and (5) Gaussian random process with non-stationary covariance function. We consider these five formulations only for the sake of illustration. Other formulations of model discrepancy function are also possible~\citep{DeCarlo2013,Arhonditsis2008}. A three-step method is proposed in order to assess these prior formulations of discrepancy, and also obtain a probability distribution of model parameters that accounts for the uncertainty due to the lack of knowledge of model inadequacy. First, Bayesian calibration is performed using each of the five options of the model discrepancy function, and five posterior distributions of model parameters and model discrepancy are obtained. In the second step, we use a quantitative model validation metric, namely a reliability-based metric~\citep{Rebba2008}, to assess the posterior model predictions corresponding to the distributions of model parameters and discrepancy obtained in the first step. In the third step, if multiple options are of comparable validity, the corresponding  posterior distributions of model parameters and discrepancy are combined into a single distribution using the weights derived from the validation comparison.
+
+The other focus of this paper is model identifiability. A model is non-identifiable if there are infinite "best" (depending on the criterion chosen) estimates for the model parameters. In the Bayesian model calibration framework, the typical sign of non-identifiabilty is that the posterior PDFs of some of the model parameters are close to the prior PDFs, which indicates that the marginal likelihoods of these parameters are nearly flat and that there is an infinite number of maximum likelihood estimates of the model parameters. Such calibration results may not be desirable for the analyst, since there is little reduction in uncertainty in the model parameters based on the observed data. 
+
+In general, model non-identifiability can be classified into two types, namely structural non-identifiability and practical non-identifiability~\citep{Raue2009}. The first type of non-identifiability, structural non-identifiability is due to the redundant parameterization of the model structure. Even if the model is structurally identifiable, a second type of non-identifiability, practical non-identifiability, can still arise due to the insufficient amount and quality of observation data. The quality of data is related to the bias and noise in the data due to the imprecision of measurement techniques. Successful detection of structural non-identifiability may help reduce model redundancy, i.e., modify the form of the model or fix the values of some model parameters. Also, by detecting the existence of practical non-identifiability, the analyst may be able to overcome this issue by collecting additional data, developing better design of experiments, or improving data quality~\citep{Arendt2012a}.
+
+It is usually straightforward to detect structural non-identifiability if the analytical expression of a model is available; however, in many problems, the analytical expression of the model is not readily available. One example is a dynamic model without an explicit steady state solution. Another possible case occurs when we add a discrepancy function to the numerical solutions of some governing equations, which in fact forms a new model without any closed-form analytical expression~\citep{Arendt2012}. Various analytical and numerical methods have been developed to detect the structural non-identifiability of dynamic models~\citep{Grewal1976,Walter1996,Jia-fan2011}, whereas the second possible case does not appear to have been studied in the literature. This section addresses this case. 
+
+Since the second type of non-identifiability, practical non-identifiability, is related to both model structure and observation data, it is necessary to inspect the likelihood function in order to determine whether some parameters of a model are practically non-identifiable.  In fact, rigorous definitions of model non-identifiability can be constructed based on the analytical properties of likelihood functions~\citep{Gu1994,Paulino1994,Little2010}. In addition to the theoretical analysis of likelihood functions, Raue et al.~\citep{Raue2009,Raue2011} developed a numerical approach based on the concept of "profile likelihood"~\citep{Murphy2000}, which has been shown to be effective in detecting practical non-identifiability. When the analytical expression of the likelihood function is available, or its numerical evaluation is trivial, it may be preferable to apply the profile likelihood-based method and determine the practical non-identifiability directly. But this method becomes cumbersome when the construction of the likelihood function is computationally expensive, since repetitive evaluations of the likelihood function are required to compute the profile likelihood.
+
+In this paper, we propose a first-order Taylor series expansion-based method, which can detect structural non-identifiability for models without analytical expressions, and can detect practical non-identifiability due to insufficient amount of data. This method does not involve computing the likelihood function or the posterior probability density of model parameters, and thus is simpler to implement and less computationally demanding. The proposed method can also be viewed as complementary to the well-established global and local sensitivity analysis methods~\citep{Oakley2004,Saltelli2008}. For example, $y= (\theta_1+\theta_2) x$ is a model with the output $y$ highly sensitive to the two parameters $\theta_1$ and $\theta_2$. Sensitivity analysis can tell us that both $\theta_1$ and $\theta_2$ have significant main effect as well as strong interaction. By applying the proposed first-order Taylor series expansion-based approach, we can further detect that these two parameters together are non-identifiable.
+
+In Section~\ref{section:BayesianCAL}, we present the basic framework of Bayesian model calibration. In Section~\ref{section:FormulationsDiscrepancy}, the five prior formulations of model discrepancy are discussed, and the corresponding likelihood functions are derived. Section~\ref{section:identifiability} focuses on the issue of model parameter non-identifiability caused by adding a model discrepancy function to the original physics model. The first-order Taylor series expansion-based method is developed in order to help choose a model discrepancy function without causing parameter non-identifiability.  Section~\ref{section:threeSteps} illustrates the three-step method to address uncertainty in model discrepancy formulation. The proposed approach is applied to two numerical examples: (1) calibration of an analytical beam model with synthetic data, and (2) calibration of a dielectric charging model for a microelectromechanical system (MEMS) device~\citep{Palit2012} with actual experimental data.
+
+%%---------------------------------------------------------------------------------------------
+\section{Bayesian model calibration}\label{section:BayesianCAL}
+
+Consider a computer model, $y_m = G(\boldsymbol{x};\boldsymbol{\theta})$, with input $\boldsymbol{x}$, parameter $\boldsymbol{\theta}$, and output $y_m$. This model is constructed to predict a physical quantity of interest $y$, which is observable through experiments. The model input $\boldsymbol{x}$ is a set of quantities that modelers consider unnecessary to calibrate, since these quantities can be either measured in experiments or computed from other physics models. Therefore, the model input $\boldsymbol{x}$ is set to be $\boldsymbol{x}_D$ in the process of model calibration, where $\boldsymbol{x}_D$ is a set of measured/computed values of $\boldsymbol{x}$. Note that in the presence of measurement error in experiments, or other sources of uncertainty in the models used to compute $\boldsymbol{x}$, some elements of $\boldsymbol{x}_D$ may be treated as random variables with known probability distributions. In contrast to $\boldsymbol{x}$, the model parameter set $\boldsymbol{\theta}$ is considered unknown due to the lack of direct measurement or physical knowledge, and the objective of model calibration is to estimate these parameters based on available input-output observations.
+
+\begin{figure}[h!]
+\begin{center}
+\includegraphics[trim=35mm 92mm 80mm 42mm, clip, width=0.7\textwidth]{Graphs_modelG.pdf}\label{fig:modelG}
+\end{center}
+\caption{Relationship between a computer model and corresponding experimental observation}
+\label{fig:example-1}
+\end{figure}
+
+In the KOH framework, the relationship between experimental observation $y_D$, true value of the quantity $y$, and model output $y_m$ is described as (Fig.~\ref{fig:example-1})
+\begin{eqnarray}
+y_D &=& y + \varepsilon_{obs} \label{eq:ObservationAndTruevalue}\\
+y &=& y_m+\delta = G(\boldsymbol{x}_D, \boldsymbol{\theta})+\delta(\boldsymbol{x}_D) \label{eq:KOHrelation}
+\end{eqnarray}
+where $\varepsilon_{obs}$ represents measurement uncertainty and is often treated as a zero-mean Guassian random variable with variance $\sigma_{obs}^2$. Uncertainty due to model inadequacy is represented by a model discrepancy term $\delta$, which could be a function of model input $\boldsymbol{x}_D$. Since $\sigma_{obs}$ and $\delta$ are usually unknown, they may also need to be calibrated. Note that $y_D$ is treated as a random variable in Eq.~\ref{eq:ObservationAndTruevalue}, and the samples of $y_D$ are the actual observation data of $y$. Assuming $m$ samples of $y_D$ (denoted as $\boldsymbol{D}=[D_1, D_2, ..., D_m]$) are collected for a single input setting $\boldsymbol{x}_D$, we can calibrate the unknown parameters $\boldsymbol{\theta}$, $\sigma_{obs}$, and $\delta$ using Bayes' theorem as
+\begin{eqnarray}\label{eq:Bayes}
+\pi(\boldsymbol{\theta},\sigma_{obs},\delta| \boldsymbol{D}) &=& \frac{\mathcal{L}(\boldsymbol{\theta},\sigma_{obs},\delta) \ \pi(\boldsymbol{\theta}) \ \pi(\sigma_{obs}) \ \pi(\delta)}{\int \mathcal{L}(\boldsymbol{\theta},\sigma_{obs},\delta) \ \pi(\boldsymbol{\theta}) \ \pi(\sigma_{obs}) \ \pi(\delta) \ \mathrm{d} \boldsymbol{\theta} \ \mathrm{d} \sigma_{obs} \ \mathrm{d} \delta} \nonumber\\
+\mathcal{L}(\boldsymbol{\theta},\sigma_{obs},\delta) &\propto& \prod_{i=1}^{m}\pi( y_D=D_i|\boldsymbol{\boldsymbol{x}_D, \theta},\sigma_{obs},\delta)
+\end{eqnarray}
+where $\pi(\boldsymbol{\theta})$, $\pi(\sigma_{obs})$, $\pi(\delta)$ are the prior PDFs of $\boldsymbol{\theta}$, $\sigma_{obs}$, and $\delta$ respectively, representing prior knowledge of these parameters before calibration; $\pi(\boldsymbol{\theta},\sigma_{obs},\delta | \boldsymbol{D})$ is the joint posterior (or calibrated) PDF of $\boldsymbol{\theta}$, $\sigma_{obs}$, and $\delta$; the joint likelihood function of $\boldsymbol{\theta}$, $\sigma_{obs}$, and $\delta$, which is denoted as $\mathcal{L}(\boldsymbol{\theta},\sigma_{obs},\delta)$, is proportional to  the conditional probability of observing the data $\boldsymbol{D}$ given these parameters. Note that $\pi(*)$ denotes probability density function in this paper.
+
+In the case where experimental observations are taken for multiple input settings, paired data $\{ \boldsymbol{x}_{Di}, y_{Di} \}_{i=1}^{n}$ may be available. Let $\boldsymbol{X}_D = [ \boldsymbol{x}_{D1}, \boldsymbol{x}_{D2}, ..., \boldsymbol{x}_{Dn} ]$, and the corresponding output observation $\boldsymbol{y}_D =[ y_{D1}, y_{D2}, ..., y_{Dn} ]$. Note that $\boldsymbol{y}_D$ becomes a random vector. Assuming that $m$ realizations fo $\boldsymbol{y}_D$ (denoted as $\boldsymbol{D}=[\boldsymbol{D}_1, \boldsymbol{D}_2, ..., \boldsymbol{D}_m]$) are collected in the experiments, the likelihood function in Eq.~\ref{eq:Bayes} becomes
+\begin{equation}\label{eq:LK-multidata}
+\mathcal{L}(\boldsymbol{\theta},\sigma_{obs},\delta) \propto \prod_{i=1}^{m}\pi( \boldsymbol{y}_D=\boldsymbol{D}_i|\boldsymbol{X}_D,\boldsymbol{\theta},\sigma_{obs},\delta)
+\end{equation}
+where $\pi(\boldsymbol{y}_D=\boldsymbol{D}_i|\boldsymbol{X}_D,\boldsymbol{\theta},\sigma_{obs},\delta)$ is the joint PDF of the random vector $\boldsymbol{y}_D$ evaluated at $\boldsymbol{D}_i$, and this probability distribution is conditioned on $\boldsymbol{X}_D$, $\boldsymbol{\theta}$, $\sigma_{obs}$, and $\delta$.
+
+In the original KOH framework, both the model (or simulator) $G(\boldsymbol{x};\boldsymbol{\theta})$ and the model discrepancy function $\delta$ are approximated using Gaussian process models, and these two Gaussian process models are calibrated simultaneously. In this paper, we consider the cases when the physics model is inexpensive to evaluate, or a surrogate model has been built and validated to replace the expensive simulator. Therefore, calibrating the emulator hyperparameters is not considered in this paper. 
+
+
+%%---------------------------------------------------------------------------------------------
+\section{Formulation of model discrepancy function}\label{section:FormulationsDiscrepancy}
+Section~\ref{section:BayesianCAL} reviewed the basic framework of Bayesian model calibration with a generalized discrepancy term. To establish the likelihood function in Eq.~\ref{eq:LK-multidata}, the model discrepancy function $\delta$ needs to be formulated prior to calibration. This section explores several options to parameterize model discrepancy, and the corresponding likelihood functions are derived. These formulations can be used to represent the modeler's prior knowledge of model inadequacy, and the coefficients of the parameterized model discrepancy function can be included in Bayesian calibration in order to obtain \textit{a posteriori} estimation of model discrepancy.
+
+\subsection{Model discrepancy as a constant bias}
+The simplest formulation is to treat model discrepancy as a constant, i.e., the bias between model prediction and the real process is assumed to be independent of the input $\boldsymbol{x}$. Using the assumption that measurement error $\varepsilon_{obs} \sim \mathcal{N}(0, \sigma^2_{obs})$ and the linear relationship specified in Eqs.~\ref{eq:ObservationAndTruevalue} and~\ref{eq:KOHrelation}, experimental observation $(\boldsymbol{y}_D|\boldsymbol{X}_D, \boldsymbol{\theta},\sigma_{obs},\delta)$ is normally distributed:
+\begin{equation}
+(\boldsymbol{y}_D | \boldsymbol{X}_D, \boldsymbol{\theta},\sigma_{obs},\delta) \sim \mathcal{N}(G(\boldsymbol{X}_D; \boldsymbol{\theta})+\delta,\sigma_{obs}^2 \boldsymbol{I})
+\end{equation}
+where $\boldsymbol{I}$ represents identity matrix, i.e., the elements of $\boldsymbol{y}_D$ are conditionally independent of each other. The likelihood function in Eq.~\ref{eq:LK-multidata} can then obtained by evaluating the PDF of the above Gaussian distribution with $\boldsymbol{y}_D=\boldsymbol{D}_i$.
+
+\subsection{Model discrepancy as i.i.d. Gaussian random variables with fixed mean and variance}\label{section:delta-iid-GaussRV}
+Bias between model and experiment is rarely an input-independent constant. Instead, it may be different at different input settings. If this variation is purely random, model discrepancy can be treated as independent and identically distributed (i.i.d.) Gaussian random variables over the input domain, with fixed mean $\mu_{\delta}$ and variance $\sigma_{\delta}$. Therefore, for any input $\boldsymbol{x}$, we have 
+\begin{equation}
+\delta(\boldsymbol{x}) \sim \mathcal{N} (\mu_{\delta}, \sigma_{\delta}^2)
+\end{equation}
+
+This type of model discrepancy not only adds a mean correction ($\mu_{\delta}$) to the model prediction but also increases the prediction variance by $\sigma_{\delta}^2$. The conditional probability distribution of $\boldsymbol{y}_D$ then becomes
+\begin{equation}
+(\boldsymbol{y}_D | \boldsymbol{X}_D, \boldsymbol{\theta},\sigma_{obs},\mu_{\delta}, \sigma_{\delta}) \sim \mathcal{N}(G(\boldsymbol{X}_D, \boldsymbol{\theta})+\mu_{\delta},(\sigma_{obs}^2+\sigma_{\delta}^2)\boldsymbol{I})
+\end{equation}
+
+\subsection{Discrepancy as Gaussian random variable with input-dependent mean and variance}\label{section:delta-inputdependent-GaussRV}
+If there is some evidence/knowledge suggesting the existence of input dependence in the model discrepancy function, the assumption of i.i.d. random variables may no longer be valid. The input dependence can be explicitly accounted for by assuming the mean and variance of $\delta$ to be functions of $\boldsymbol{x}$, i.e., 
+\begin{equation}
+\delta \sim \mathcal{N} (\mu_{\delta}(\boldsymbol{x};\boldsymbol{\phi}), \sigma^2_{\delta}(\boldsymbol{x};\boldsymbol{\varphi}))
+\end{equation}
+where $\boldsymbol{\phi}$ is the set of coefficients in the mean function $\mu_{\delta}(*)$, and $\boldsymbol{\varphi}$ is the set of coefficients in the variance function $\sigma^2_{\delta}(*)$. The choice of the form of the mean and variance functions can be rather subjective and is typically problem-specific. One such choice will be demonstrated in the numerical example. 
+
+In this case, the conditional probability distribution of $\boldsymbol{y}_D$ becomes
+\begin{equation}
+(\boldsymbol{y}_D | \boldsymbol{X}_D, \boldsymbol{\theta},\sigma_{obs},\boldsymbol{\phi}, \boldsymbol{\varphi}) \sim \mathcal{N}(G(\boldsymbol{X}_D, \boldsymbol{\theta})+\mu_{\delta}(\boldsymbol{X}_D;\boldsymbol{\phi}), [\sigma_{obs}^2+\sigma_{\delta}^2(\boldsymbol{X}_D;\boldsymbol{\varphi})] \boldsymbol{I})
+\end{equation}
+
+\subsection{Discrepancy as a Gaussian process with stationary covariance function}\label{section:stationaryGP}
+The aforementioned formulations of model discrepancy in Sections~\ref{section:delta-iid-GaussRV} and \ref{section:delta-inputdependent-GaussRV} assume that model discrepancies at different input points are statistically independent of each other. However, if a model makes a poor prediction at one input point, it is not uncommon to find that it also fails at a nearby input point, which suggests the existence of statistical correlation between model discrepancies at these two input points. Instead of a set of independent random variables, it may be desirable to treat $\delta$ as a Gaussian process:
+\begin{equation}
+\delta \sim \mathcal{GP} (m(\boldsymbol{x};\boldsymbol{\phi}), k(\boldsymbol{x}, \boldsymbol{x}';\boldsymbol{\varphi}))
+\end{equation}
+where $m(*)$ is the mean function of this Gaussian process $\delta$, and $\boldsymbol{\phi}$ is the set of coefficients of $m(*)$; $k(*)$ is the covariance function of $\delta$, and $\boldsymbol{\varphi}$ is the set of coefficients of $k(*)$. Covariance functions with different properties (e.g., order of continuity, stationary/nonstationary, isotropic/anisotropic) have been developed. The most widely used one within the machine learning literature is the squared exponential function, which is infinitely differentiable, stationary, and isotropic~\citep{Rasmussen2006}. An example squared exponential function can be written as
+\begin{equation}\label{eq:sqExpCovFun}
+k(\boldsymbol{x},\boldsymbol{x'};\boldsymbol{\varphi}) = \lambda \exp \Big( -\sum_{i=1}^q \frac{(x_i - x_i')^2}{2 l_i^2} \Big)
+\end{equation}
+where $\boldsymbol{\varphi}=[\lambda,l_1,l_2,...,l_q]$, and $q$ is the dimension of the inputs $\boldsymbol{x}=[x_1,x_2,...,x_q]$; $\lambda$ is the variance of this Gaussian process; $l_i$ is the length-scale parameter corresponding to the input variable $x_i$. Higher values of $l_i$ indicate higher statistical correlation along the input dimension $x_i$. 
+
+As the discrepancy function is assumed to be a Gaussian process, the elements of $\boldsymbol{y}_D$ become correlated, and they follow a multivariate Gaussian distribution as
+\begin{equation}\label{eq:delta-GP}
+(\boldsymbol{y}_D | \boldsymbol{X}_D, \boldsymbol{\theta},\sigma_{obs},\boldsymbol{\varphi} ) \sim \mathcal{N}(G(\boldsymbol{X}_D; \boldsymbol{\theta})+m(\boldsymbol{X}_D;\boldsymbol{\phi}),\Sigma+\sigma_{obs}^2 \boldsymbol{I})
+\end{equation}
+where
+\begin{equation}\label{eq:observation1}
+m(\boldsymbol{X}_D;\boldsymbol{\phi}) =
+\begin{bmatrix}
+m(\boldsymbol{x}_{D1};\boldsymbol{\phi}) \\
+\vdots \\
+m(\boldsymbol{x}_{Dn};\boldsymbol{\phi}) 
+\end{bmatrix}, \quad
+\Sigma = 
+\begin{bmatrix}
+k(\boldsymbol{x}_{D1},\boldsymbol{x}_{D1};\boldsymbol{\varphi}) & \ldots & k(\boldsymbol{x}_{D1},\boldsymbol{x}_{Dn};\boldsymbol{\varphi}) \\
+\vdots & \ddots &\vdots \\
+k(\boldsymbol{x}_{Dn},\boldsymbol{x}_{D1};\boldsymbol{\varphi}) & \ldots & k(\boldsymbol{x}_{Dn},\boldsymbol{x}_{Dn};\boldsymbol{\varphi})
+\end{bmatrix}
+\end{equation}
+
+In order to compute the likelihood function $\mathcal{L}(\boldsymbol{\theta},\sigma_{obs},\delta)$, the PDF of the multivariate Gaussian distribution in Eq.~\ref{eq:delta-GP} needs to be evaluated, which requires computing the determinant and inverse of the covariance matrix $\Sigma+\sigma_{obs}^2 \boldsymbol{I}$. As the number of data points increases, this covariance matrix may become ill-conditioned and lead to significant numerical errors in the computation of the likelihood function. In this paper, we use a Cholesky decomposition-based strategy to compute the determinant and inverse of the covariance matrix, which helps mitigate the numerical difficulty in likelihood evaluation~\citep{Haarhoff2013}.
+
+\subsection{Discrepancy as a Gaussian process with non-stationary covariance function}\label{section:nonstationaryGP}
+The Gaussian process in Section~\ref{section:stationaryGP} is stationary since the squared exponential covariance function satisfies $k(\boldsymbol{x},\boldsymbol{x'};\varphi)=k(\boldsymbol{x+\Delta\boldsymbol{x}},\boldsymbol{x'}+\Delta\boldsymbol{x};\varphi)$, i.e., the marginal variances of model discrepancy at different input points are the same. If we consider variance as an indicator of the degree of uncertainty, it may be desirable to allow the variance of model discrepancy to vary with model input, since the uncertainty regarding model discrepancy at an input setting depends on the amount of data points available and the smoothness of the underlying discrepancy function. In order to account for the non-stationary trend of variance in the Gaussian process discrepancy formulation, we can add an input-dependent term to a stationary covariance function. For example, if time is one of the input variables and one has reasons to believe that the variance of discrepancy decreases with time, the following covariance function may be used 
+\begin{equation}\label{eq:nonstationaryCovGP}
+k(\boldsymbol{x},\boldsymbol{x'}; \boldsymbol{\varphi}) = 
+\begin{cases}
+k_1( \boldsymbol{x},\boldsymbol{x'};\boldsymbol{\varphi}_1), & t \ne t'\\
+k_1( \boldsymbol{x},\boldsymbol{x'};\boldsymbol{\varphi}_1)+ k_2(t;\boldsymbol{w}), & t = t'
+\end{cases}
+\end{equation}
+where $k_1(*)$ is the squared exponential function in Eq.~\ref{eq:sqExpCovFun}; the second term $k_2(t;\boldsymbol{w})=w_1 \exp(-w_2 t)$ is an exponential decreasing function with respect to time when $w_1>0$ and $w_2>0$, which essentially reduces the values of the diagonal entries of the covariance matrix $\Sigma$ in Eq.~\ref{eq:observation1}. 
+
+Note that other types of non-stationary covariance functions, such as linear/polynomial dot product kernels and neural network kernels~\citep{Rasmussen2006}, can also be used depending on the features of a specific problem.
+
+Substituting the new covariance function into Eq.~\ref{eq:observation1}, we can obtain the corresponding covariance matrix, which can be further used to compute the likelihood function as described in Section~\ref{section:stationaryGP}.
+
+%%---------------------------------------------------------------------------------------------
+\section{Identifiability of model parameters}\label{section:identifiability}
+
+The focus of this section is to develop a fast method for the detection of model non-identifiability without actually performing full Bayesian model calibration (which may be computationally expensive).
+
+Suppose the physics model to be calibrated is $y_m=G(\boldsymbol{x};\boldsymbol{\theta})$, and a Gaussian process discrepancy function $\delta \sim \mathcal{GP} \big( m(\boldsymbol{x};\boldsymbol{\phi}), k(\boldsymbol{x},\boldsymbol{x}'; \boldsymbol{\varphi}) \big)$ is added to the model. Thus, a new model is formed as $G_{new}(\boldsymbol{x};\boldsymbol{\psi})=G(\boldsymbol{x};\boldsymbol{\theta})+m(\boldsymbol{x};\boldsymbol{\phi})$, where $\boldsymbol{\psi}=[\boldsymbol{\theta},\boldsymbol{\phi}]$ includes the parameters of the physics model ($\boldsymbol{\theta}$) and the parameters of the mean of the discrepancy function ($\boldsymbol{\phi}$). Note that the covariance function $k(\boldsymbol{x},\boldsymbol{x}'; \boldsymbol{\varphi})$ is not included in the new model, since the proposed method is not applicable to statistical models. In the case that the measurement noise is a zero mean random variable, $G_{new}$ is the expectation of observation $y_D$ according to Eqs.~\ref{eq:ObservationAndTruevalue} and~\ref{eq:KOHrelation}. Further assume that the analytical form of $G_{new}$ is not available. In such cases, the first-order Taylor series expansion of this model (as shown in Eq.~\ref{eq:1stTaylor}) can be used as an efficient approximation when the model is believed to be not highly nonlinear:
+\begin{eqnarray}\label{eq:1stTaylor}
+E[y_D] = G_{new}(\boldsymbol{x}_D;\boldsymbol{\psi}) \approx G_{new}(\boldsymbol{x}_D;\hat{\boldsymbol{\psi}}) + \sum_{i=1}^{p} \frac{\partial{G_{new}}}{\partial{\psi_i}} \bigg|_{\boldsymbol{\psi}=\hat{\boldsymbol{\psi}}} \psi_i
+\end{eqnarray} 
+where $\hat{\boldsymbol{\psi}}$ is the point of expansion, and $p$ is the number of model parameters. In this paper, we use the mean of the prior of $\boldsymbol{\psi}$ as $\hat{\boldsymbol{\psi}}$ since it is readily available. A better option for $\hat{\boldsymbol{\psi}}$ may be the maximum \textit{a posteriori} (MAP) estimation of the parameters if it is available. To find the MAP estimation for the parameters of a general model, global optimization algorithms such as simulated annealing~\citep{Kirkpatrick1983} and particle swarm optimization~\citep{Kennedy1995} can be used, which may require hundreds of model evaluations to reach convergence.
+
+Suppose there are $n$ data points available, i.e., experimentally observed values $\boldsymbol{D}=[D_1,D_2,...,D_n]$ corresponding to different input settings $\boldsymbol{X}_D = [\boldsymbol{x}_{D1},\boldsymbol{x}_{D2},...,\boldsymbol{x}_{Dn}]$. Without considering measurement uncertainty and the variance of the model discrepancy function, we can construct a linear system as
+\begin{eqnarray}\label{eq:linearSYS1}
+\boldsymbol{A} \boldsymbol{\psi}^T = \boldsymbol{D} - G_{new}(\boldsymbol{x}_D;\hat{\boldsymbol{\psi}}), \quad\boldsymbol{A} = \begin{bmatrix}
+\frac{\partial{G_{new}}}{\partial{\psi_1}} \big|_{\boldsymbol{x}_{D1},\hat{\boldsymbol{\psi}}} & ... & \frac{\partial{G_{new}}}{\partial{\psi_p}} \big|_{\boldsymbol{x}_{D1},\hat{\boldsymbol{\psi}}}\\
+\vdots & \ddots & \vdots \\
+\frac{\partial{G_{new}}}{\partial{\psi_1}} \big|_{\boldsymbol{x}_{Dn},\hat{\boldsymbol{\psi}}} & ... & \frac{\partial{G_{new}}}{\partial{\psi_p}} \big|_{\boldsymbol{x}_{Dn},\hat{\boldsymbol{\psi}}}
+\end{bmatrix}
+\end{eqnarray}
+
+The linear system in Eq.~\ref{eq:linearSYS1} can be underdetermined or determined, depending on the rank of the matrix $\boldsymbol{A}$ (denoted as $r_{A}$). If $r_{A} < p$, the system is underdetermined and there will be an infinite number of $\boldsymbol{\psi}$ values satisfying Eq.~\ref{eq:linearSYS1}; if $r_{A} = p$, the system is determined and there will be a unique vector $\boldsymbol{\psi}$ satisfying Eq.~\ref{eq:linearSYS1}. The latter case suggests that the model is practically identifiable given the available data points (assuming the quality of the data does not cause non-identifiability). The former case suggests that the model is non-identifiable either due to the model structure or insufficient data. If the inequality $r_{A} < p$ continues to hold as we increase the number of observation data, then it can be inferred that the model is structurally non-identifiable. 
+
+In order to help the analyst reduce model redundancy once a model is detected as structurally non-identifiable, it may be of interest to know which set of parameters can/cannot be identified. Using the formulation of the linear system in Eq.~\ref{eq:linearSYS1}, we can retrieve this information by checking the linear dependence between the column vectors of the matrix $\boldsymbol{A}$, since the $i$-th column of $\boldsymbol{A}$ corresponds to the parameter $\psi_i$. For example, if the $i$-th column vector $\boldsymbol{a}_i$ and the $j$-th column vector $\boldsymbol{a}_j$ are linearly dependent, it is apparent that the corresponding parameters $\psi_i$ and $\psi_j$ are non-identifiable using the linear model in Eq.~\ref{eq:1stTaylor}. We can also find one set of identifiable parameters using the simple algorithm below:
+
+\begin{algorithm}                      % enter the algorithm environment
+\caption{Find one set of identifiable parameters}          % give the algorithm a caption
+\label{alg:Iden}                           % and a label for \ref{} commands later in the document
+\begin{algorithmic}                    % enter the algorithmic environment
+    \Require The first-order derivative matrix $\boldsymbol{A}$
+    \Ensure The index set of identifiable parameters $\boldsymbol{I}$
+    \State $\boldsymbol{A}_{temp} = \boldsymbol{A}$
+    \State $\boldsymbol{I}$ = empty set
+    \For{$i=1$ to $p-1$}
+    \State $r_1$ = the rank of $\boldsymbol{A}_{temp}$
+    \State Remove the first column from $\boldsymbol{A}_{temp}$
+    \State $r_2$ = the rank of $\boldsymbol{A}_{temp}$ (with the first column removed)
+    \If{$r_1 > r_2$}
+        \State Add the value of $i$ to the set $\boldsymbol{I}$ as an element
+    \EndIf
+    \If{(the number of elements in $\boldsymbol{I}$) = $r_{\boldsymbol{A}}}$
+    	\State Break
+	\Else \If{$i=p-1$}
+	\State Add the value of $i+1$ to the set $\boldsymbol{I}$ as an element
+	\EndIf
+ \EndIf
+    \EndFor
+    \State \Return $\boldsymbol{I}$
+\end{algorithmic}
+\end{algorithm}
+Algorithm~\ref{alg:Iden} takes one column from the matrix $A_{temp}$ ($=A$ at the beginning) at a time, and saves the column index only if this column is linearly independent of all the remaining columns in $A_{temp}$. By repeating this procedure until the number of saved column indices is equal to the rank of $A$ ($r_A$), we obtain $r_A$ number of linearly independent columns from the original matrix $A$, which represents a set of identifiable parameters. Note that there may be multiple sets of identifiable parameters. To identify all the sets, we can permute the columns of $\boldsymbol{A}$, and apply the algorithm to each of the $p!$ permuted matrices. In practice, usually only one set of identifiable parameters is needed, and the analyst can reformulate the model with this set of identifiable parameters, by either removing the other parameters from the model formulation, fixing the values of the other parameters, or combining the parameters between which there are strong evidences of linear correlation. It should also be noted that in the presence of significant model uncertainty, the analyst may choose to keep the parameter set with non-identifiability, since the tradeoffs between the physics model and the model discrepancy term introduce additional uncertainty in model parameters and model form.
+
+In order to illustrate the proposed method, consider a simple example:
+\begin{eqnarray}
+y_m &=& \theta_1 x+ \theta_2 x^2 \label{eq:iden-Example-model}\\
+\delta &=& \phi_1+\phi_2 x \label{eq:iden-Example-delta}
+\end{eqnarray}
+It is not difficult to see from Eq.~\ref{eq:iden-Example-model} that the two parameters of model ($\theta_1$ and $\theta_2$) are identifiable given no less than two pairs of input-output data. However, if we add the model discrepancy $\delta$ in Eq.~\ref{eq:iden-Example-delta} to the model in Eq.~\ref{eq:iden-Example-model}, $\theta_1$ and $\phi_2$ will become unidentifiable no matter how many data points are available.
+
+Let $\boldsymbol{\psi}=[\theta_1, \theta_2, \phi_1, \phi_2]$. Suppose measurements are available at five input points: $x^1_D=-1.0$, $x^2_D=2.0$, $x^3_D=3.5$, $x^4_D=4.0$, and $x^5_D=6.0$ (superscripts refer to data point number). We can calculate the derivatives $\partial (y_m+\delta)/\partial \psi_i$ numerically (e.g., forward difference or central difference) at these input points for given values of the parameters, and thus obtain the matrix $\boldsymbol{A}$. For example, for $[\theta_1, \theta_2, \phi_1, \phi_2]=[2.0, 0.5, 4.0, 1.5]$, the matrix $\boldsymbol{A}$ for the combination of the physics model and $\delta$ is
+\begin{equation*}
+\boldsymbol{A} = \begin{bmatrix}
+ -1.0  &   1.0  &   1.0 &  -1.0  \\
+  2.0  &   4.0 &  1.0  &   2.0  \\
+  3.5 &  12.25 &   1.0  &   3.5 \\
+  4.0  &  16.0 &   1.0  &   4.0  \\
+  6.0  &  36.0 &   1.0  &   6.0 \\
+\end{bmatrix}
+\end{equation*}
+The rank of $\boldsymbol{A}$ is equal to 3, indicating that the parameters become unidentifiable after the combination of $y_m$ and $\delta$. We can also use the program in Algorithm~\ref{alg:Iden} to infer that the parameters will become identifiable once the term $\phi_1 x$ is removed from the model discrepancy function.
+
+It should be noted that the proposed method for model identifiability detection has several limitations: (1) it uses a linear approximation of the model, and hence may fail to detect non-identifiability if the model is highly nonlinear; (2) it can only detect local non-identifiability as the Taylor series expansion is constructed based on the derivatives at a single point. It is possible that some parameters may be non-identifiable in certain regions of the parameter space but become identifiable in other regions. In such cases, we suggest to examine the rank of $A$ for multiple choices of $\hat{\boldsymbol{\psi}}$; (3) it is applicable only when the output of a model is deterministic for given values of the model inputs and parameters, i.e., it is not applicable to statistical models; and (4) it does not cover practical non-identifiability due to the \textit{quality} of data. 
+
+
+%---------------------------------------------------------------------------------------------
+\section{Assessment and combination of calibration results using a three-step approach}\label{section:threeSteps}
+If the discrepancy term captures all the missing physics in a model, the posterior distribution of model parameters is expected to converge to the true distribution given sufficient data. However, precise knowledge of model discrepancy is rarely achievable in practice. In this section, we propose a three-step heuristic approach based on a quantitative model validation metric and Bayesian model averaging, as explained below.
+
+(1) The available experimental data are partitioned into two sets, one of which will be used for calibration (denoted as $\{\boldsymbol{X}_D^C, \boldsymbol{y}_D^C \}$ whereas the other one will be used for validation (denoted as $\{\boldsymbol{X}_D^V, \boldsymbol{y}_D^V \}$). 
+
+(2) We perform Bayesian calibration on model parameters with the various formulations of model discrepancy function using data set $D_C$ as discussed in Section~\ref{section:FormulationsDiscrepancy}. By imposing the $i$-th prior formulation of the discrepancy function (denoted as $\delta_i$) and adding it to the model $G$, we obtain the corrected model $M_i = G+\delta_i$. The corresponding joint posterior distribution of model parameters and discrepancy is denoted as $\pi(\boldsymbol{\theta},\delta | \boldsymbol{D}_C, M_i)$. Model predictions based on $\pi(\boldsymbol{\theta},\delta | \boldsymbol{D}_C, M_i)$ are then validated using a reliability-based metric, which calculates the probability of model predictions being within a specified distance from the validation data.
+
+(3) The probability of model prediction satisfying a specified tolerance can be used either to select the best model discrepancy formulation, or can be further used to obtain an "average" posterior distribution of model parameters based on Bayesian model averaging.  
+
+\subsection{Reliability-based model validation metric}\label{section:modelValidation}
+The purpose of validation activity in this section is to assess the quality of predictions resulting from calibration with different prior formulations of the model discrepancy function. The reliability-based metric was proposed by Rebba and Mahadevan~\citep{Rebba2008} as a measure of model predictive capability. It is def{}ined as the probability of the absolute dif{}ference between model prediction and observed data being less than a specified tolerance $\epsilon$, i.e.,
+\begin{equation}\label{eq:rm-single}
+r(\boldsymbol{x}) = \mathrm{Pr}(|y_D-y_m|<\epsilon)
+\end{equation}
+where $r(\boldsymbol{x})$ is the reliability metric for a given input point $\boldsymbol{x}$ within the validation domain, i.e., $\boldsymbol{x} \in \boldsymbol{X}_D^V$; $y_D$ is the observation corresponding to $\boldsymbol{x}$ and thus $y_D \in \boldsymbol{y}_D^V$; $y_m$ is the model prediction at $\boldsymbol{x}$.  The tolerance limit $\epsilon$ represents the level of acceptable prediction error to the analyst, i.e., larger values of $\epsilon$ correspond to lower accuracy requirement. Subject domain matter knowledge is needed to choose the appropriate $\epsilon$ for further decision-making. Some discussion on comparing model validation metric to accuracy requirement can be found in~\citep{Oberkampf2006}. The computation of $r(\boldsymbol{x})$ requires the probability distributions of $y_D$ and $y_m$, which are discussed below.
+
+We first discuss how to obtain the prediction $y_m$ and the corresponding probability distribution. As illustrated in Sections~\ref{section:BayesianCAL} and~\ref{section:FormulationsDiscrepancy}, the computer model $G(\boldsymbol{x};\boldsymbol{\theta})$ and the discrepancy function $\delta(\boldsymbol{
+x})$ can be calibrated using the observed values of $\boldsymbol{y}_D^C$ (denoted as $\boldsymbol{D}_C$), and then we obtain the posterior probability distribution $\pi(\boldsymbol{\theta},\delta|\boldsymbol{D}_C)$ of model parameters and $\delta$. The prediction $y_m$ in Eq.~\ref{eq:rm-single} is based on the extrapolation of the calibrated computer model and discrepancy function into the validation domain, i.e., 
+\begin{eqnarray}\label{eq:posteriorPrediction}
+&&y_m|\boldsymbol{x},\boldsymbol{\theta},\delta = G(\boldsymbol{x};\boldsymbol{\theta})+\delta(\boldsymbol{x}), \quad \boldsymbol{x} \in \boldsymbol{X}_D^V \nonumber\\
+&&\pi(y_m|\boldsymbol{x})=\int \pi(y_m|\boldsymbol{x},\boldsymbol{\theta},\delta) \pi(\boldsymbol{\theta}, \delta | \boldsymbol{D}_C) \ \mathrm{d} \boldsymbol{\theta} \ \mathrm{d} \delta
+\end{eqnarray}
+The integration in Eq.~\ref{eq:posteriorPrediction} can be numerically evaluated using Monte Carlo integration method~\citep{Zwillinger1992}. 
+
+Eq.~\ref{eq:ObservationAndTruevalue} can be used to derive the probability distribution of $y_D$. If the true value $y$ is treated as a constant for the given input $\boldsymbol{x}$, and the measurement error is treated as a Gaussian random variable with zero mean and fixed variance, $y_D$ will also be a Gaussian random variable. The mean and variance of $y_D$ can be estimated using repetitive measurements at the same input $\boldsymbol{x}$. If only one measurement is taken at $\boldsymbol{x}$, we may assume that $y_D \sim \mathcal{N}(D,\sigma_{obs}^2)$, where $D$ is the measured value of $y_D$, and $\sigma_{obs}^2$ is the variance of the measurement error estimated in the calibration step, i.e., the measurement error is assumed to be the same in the calibration and validation domain.
+
+Based on the posterior distribution of the model prediction $y_m$ and the measurement $y_D$, the reliability-based metric can be rewritten as
+\begin{equation}
+r(\boldsymbol{x}) = \int_{|y_D-y_m|<\epsilon} \pi(y_D|\boldsymbol{x})  \pi(y_m|\boldsymbol{x}) \ \mathrm{d}y_D \mathrm{d}y_m
+\end{equation}
+Here the integral can also be evaluated using Monte Carlo integration.
+
+Eq.~\ref{eq:rm-single} defines the reliability metric as a function of the input $\boldsymbol{x}$, and we can compute the values of $r$ at each point within the validation domain, e.g., $r(\boldsymbol{x}_{D1})$, $r(\boldsymbol{x}_{D2})$, .... These individual values of $r$ can inform decisions on point-wise model selection~\citep{Hombal2013}. However, the focus of this section is to assess the formulations of model discrepancy in Bayesian calibration based on validation results. Thus, it is desirable to establish a single measure of model predictive capability over the entire validation domain, which can be achieved by taking a weighted average of all the reliability values of the model
+\begin{equation}\label{equation:averageReliability}
+\mu_r = \frac{\sum_{i} w_i r(\boldsymbol{x}_{Di})}{\sum_{i} w_i}
+\end{equation} 
+where the weight $w_i$ is proportional to the probability density of $\boldsymbol{x}$, e.g., $w_i \propto 1$ if the input points are uniformly distributed. The averaged reliability $\mu_r$ represents the expected probability of prediction error being within tolerance over the validation domain, and thus can be considered as an overall validation metric. Note that the weighted average of model reliability in Eq.~\ref{equation:averageReliability} does not impose a huge penalty on models with bad prediction at one point. In a complicated physics problem where model uncertainty may be significant, it is likely that none of the available models can achieve nontrivial reliability at every validation point. In such cases, the proposed model validation metric may be more appropriate since it evaluates the global performance of the model and does not become zero because of poor model predictions at a few points. In a more comprehensive model validation practice, in addition to the overall validation metric, the analyst may also need to evaluate the performance of the model at different regions of the validation domain using the original reliability metric, which has explicit dependence on the input $\boldsymbol{x}$.
+
+By substituting the results of Bayesian calibration into Eq.~\ref{eq:posteriorPrediction}, the validation metric $\mu_r$ can be computed with respect to each of the various model discrepancy formulations illustrated in Section~\ref{section:FormulationsDiscrepancy}. If the $\mu_r$ corresponding to a particular formulation $\delta_i$ is significantly higher than the others, it is suggested that the calibration using $\delta_i$ leads to better prediction in the validation domain, and thus $\delta_i$ may be the best approximation to the actual model discrepancy. However, different formulations can sometimes lead to similar values of $\mu_r$, in which case one may use a weighted averaging approach as discussed below.
+
+\subsection{Combining the posterior probability distributions of model parameters and discrepancy}\label{section:combinationStep}
+When predictions based on different formulations of model discrepancy function lead to similar validation results, it is not clear which formulation of $\delta$ and the corresponding calibration result one should select for further prediction. In such cases, we suggest combining the various posterior distributions of model parameters and discrepancy based on a weighted averaging approach~\citep{Hoeting1999}. This approach accounts for the uncertainty induced by the lack of knowledge regarding the model discrepancy formulation, and can be viewed as an extension to the Bayesian framework proposed by Sankararaman and Mahadevan~\citep{Sankararaman2012c}, which demonstrated the use of model validation results to combine the prior and posterior probability distributions of model parameters in multi-level systems~\citep{Sankararaman2012,Mullins2013}.
+
+Since the overall reliability metric $\mu_r$ described in the previous section is a probabilistic metric which quantifies the predictive capability of $M_i$, we can obtain the probabilistic weight $w_{M_i}$ of each formulation by normalizing $\mu_r^i$ as
+\begin{equation}\label{eq:modelWeights}
+w_{M_i}=\frac{\mu_r^i}{\sum_{j=1}^N \mu_r^j}
+\end{equation}
+
+Each $M_i$ corresponds to a posterior probability distribution of model parameters and discrepancy $\pi(\boldsymbol{\theta},\delta|\boldsymbol{D}_C,M_i)$. Based on the probabilistic weights estimated in Eq.~\ref{eq:modelWeights}, the density functions of these posterior distributions can be combined to obtain an averaged density function $\pi(\boldsymbol{\theta},\delta|\boldsymbol{D}_C)$ as
+\begin{equation}\label{eq:combinePDF}
+\pi(\boldsymbol{\theta},\delta | \boldsymbol{D}_C)=\sum_{i=1}^N \pi(\boldsymbol{\theta},\delta|\boldsymbol{D}_C,M_i) w_{M_i}
+\end{equation}
+Note that the probability density function $\pi(\boldsymbol{\theta},\delta|\boldsymbol{D}_C)$ is not conditioned on any specific model discrepancy formulation, and is expected to be wider than the conditional density functions $\{\pi(\boldsymbol{\theta},\delta|\boldsymbol{D}_C,M_i)\}_{i=1}^N$ since the uncertainty due to model discrepancy formulation is included.
+
+
+
+%---------------------------------------------------------------------------------------------
+\section{Numerical examples}\label{section:NumExp}
+We investigate the various options of model discrepancy formulation using two numerical examples. In Section~\ref{subsection:NumExp-1}, calibration of Young's modulus using an analytical model of a cantilever beam with synthetic data is considered. In Section~\ref{subsection:NumExp-2}, we calibrate a more complicated physics model (MEMS device dielectric charging) with actual experimental data. In both examples, the Metropolis-Hastings Markov chain Monte Carlo (MCMC) method~\citep{Hastings1970} is used to generate samples from the posterior distribution.
+
+%%---------------------------------------------------------------------------------------------
+\subsection{Calibration of Young's modulus using an Euler-Bernoulli beam model}\label{subsection:NumExp-1}
+%
+\begin{figure}[h!]
+\centering
+\includegraphics[trim = 50mm 120mm 40mm 70mm, clip, width=0.5\textwidth]{cantilever.pdf}
+\label{figure:cantilever}
+\caption{A thick cantilever subjected to point load at the free end}
+\end{figure}
+
+In this section, we will examine the effect of model discrepancy formulation on the calibration of Young's modulus using an Euler-Bernoulli beam model. A thick microcantilever beam subjected to a point load $P$ is considered (Fig.~\ref{figure:cantilever}, $L=h=400\ \mu m$, $b=1\ \mu m$). By solving the Euler-Bernoulli equation, the static vertical deflection $u_y$ along the x-axis ($y=0$) can be obtained as~\citep{Gere2009}
+\begin{equation}\label{eq:EulerBernoulliBeam}
+u_y = \frac{P(3L-x)x^2}{6EI}
+\end{equation}
+
+The solution in Eq.~\ref{eq:EulerBernoulliBeam} does not account for shear deformation. A more accurate solution of $u_y$ can be obtained from the Timoshenko beam theory as~\citep{Timoshenko1970,Augarde2008}
+\begin{equation}\label{eq:TimoshenkoBeam}
+u_y = \frac{P}{6EI} \Big[(4+5\nu)\frac{h^2 x}{4}+(3L-x)x^2 \Big]
+\end{equation}
+
+In this example, we assume for the sake of illustration that the solution in Eq.~\ref{eq:TimoshenkoBeam} represents the true value of $u_y$. 20 experimental data points are synthetically generated by adding a measurement noise term $\varepsilon_{obs} \sim \mathcal{N}(0,0.1)$ to Eq.~\ref{eq:TimoshenkoBeam} with Young's modulus $E=200$ GPa and the applied load $P=2.5$ $\mu$N. Note that this value of Young's modulus and the ``true" solution in Eq.~\ref{eq:TimoshenkoBeam} are assumed to be unknown in the calibration exercise. The Euler-Bernoulli beam solution in Eq.~\ref{eq:EulerBernoulliBeam} is assumed to be the only available physics model, and the synthetic data are used to calibrate $E$ using Eq.~\ref{eq:EulerBernoulliBeam}. The discrepancy function between the physics model in Eq.~\ref{eq:EulerBernoulliBeam} and the ``true" solution in Eq.~\ref{eq:TimoshenkoBeam} is a linear function of $x$ as
+\begin{equation}\label{eq:trueDiscrepancy}
+\delta_{true} = \frac{P}{6EI} (4+5\nu)\frac{h^2 x}{4}
+\end{equation}
+
+Assuming $\delta_{true}$ in Eq.~\ref{eq:trueDiscrepancy} is unknown, a common practice to acquire prior knowledge of model discrepancy is by examining the difference between calibration data and the least-squares model prediction (i.e., prediction using Eq.~\ref{eq:EulerBernoulliBeam} with $E$ estimated using the least-squares method). The upper subplot of Fig.~\ref{figure:discrepancyPlot} shows the calibration data and least-squares model prediction, and the lower subplot shows the actual model discrepancy $\delta_{true}$ and the least-squares model discrepancy $\delta_{ls}$. We can observe that both $\delta_{true}$ and $\delta_{ls}$ have functional dependence on the input $x$. However, $\delta_{ls}$ appears to be a nonlinear function of $x$, whereas the ``true" discrepancy $\delta_{true}$ is a linear function of $x$, which suggests that we may not be able to infer the correct form of the model discrepancy function from $\delta_{ls}$.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.5\textwidth]{delta_plot_NumExp1.pdf}
+\caption{Actual model discrepancy versus least squares model discrepancy}
+\label{figure:discrepancyPlot}
+\end{figure}
+
+In order to study the effect of model discrepancy assumptions on the calibration results, we consider the various options discussed in Section~\ref{section:FormulationsDiscrepancy}: (1) an unknown constant $\delta_1$; (2) i.i.d. Gaussian random variable with input-independent mean and variance, i.e., $\delta_2 \sim \mathcal{N}(\mu_{\delta_2},\sigma_{\delta_2}^2)$; (3) Gaussian random variable with input-dependent mean and variance, i.e., $\delta_3 \sim \mathcal{N}(\mu_{\delta_3}(x),\sigma_{\delta_3}(x)$; (4) a Gaussian process with squared exponential covariance function, i.e., $\delta_4 \sim \mathcal{N}(m(x), k(x,x'))$. Gaussian process with non-stationary covariance function as discussed in Section~\ref{section:nonstationaryGP} is not considered here, since the ``true" model discrepancy is just a simple function and there is no need to overparameterize $\delta$. The dependence of model discrepancy on the input $x$ which we observed in the plot of $\delta_{ls}$ can be accounted for by using $\delta_3$ or $\delta_4$, since both options include input-dependent mean and variance function. In this example, $\mu_{\delta_3}(x)$, $\sigma_{\delta_3}(x)$, and $m(x)$ are assumed to be linear functions of $x$. Note that if these functions are assume to be third degree polynomials of $x$, the model will become unidentifiable.  It can be easily verified using the first-order Taylor series expansion-based method illustrated in Section~\ref{section:identifiability}. For the combination of $u_y$ in Eq.~\ref{eq:EulerBernoulliBeam} and a third degree polynomial $\phi_1+\phi_2 x + \phi_3 x^2 + \phi_4 x^3$, the corresponding matrix $\boldsymbol{A}$  is computed, and the rank $r_{\boldsymbol{A}}=4$, which is less than the total number of parameters (=5). By applying Algorithm~\ref{alg:Iden} to randomly permuted $\boldsymbol{A}$, it is found that $E$, $\phi_3$, and $\phi_4$ can not be identified at the same time, i.e., one of them will need to be removed from the formulation to ensure the identifiability of the model. 
+
+The unknown coefficients in the various model discrepancy formulations are calibrated along with Young's modulus $E$, and independent uniform prior distributions are used (the prior range of $E$ is [50 GPa, 300 GPa]). The marginal posterior PDFs of Young's modulus corresponding to the various options of model discrepancy are shown in Fig.~\ref{figure:marginalE}. It can be observed that calibration without model discrepancy results in the most biased estimation of $E$, which is expected since the physics model is imperfect. The posteriors of $E$ obtained from calibration with $\delta_1$ or $\delta_2$ are also away from the true value, since these two options assume that model discrepancy is input-independent whereas the actual $\delta$ is input-dependent. (Note that the use of $\delta_2$ leads to a slightly wider posterior of $E$ compared to $\delta_1$, since treating model discrepancy as i.i.d. random variables ($\delta_2$) overestimates the uncertainty due to model error). Calibration with $\delta_3$ or $\delta_4$ gives similar posteriors of $E$, and both posterior PDFs cover the true value. We can also observe that these two posterior PDFs are significantly wider than the others, which is mainly due to the uncertainty regarding the coefficients of $\mu_{\sigma_3}(x)$ and $m(x)$. If stronger priors are enforced on these coefficients (i.e., the ranges of their uniform prior distributions are set to be smaller), the posterior variance of $E$ will decrease correspondingly. 
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.5\textwidth]{marginalPostPDF_all_NumExp1.pdf}
+\caption{Marginal posterior PDFs of Young's modulus (``True" value = 200 GPa)}
+\label{figure:marginalE}
+\end{figure}
+
+
+Due to the simplicity of the beam models, the calibrated model with model discrepancy corrections match well with the calibration data. In order to assess the various options of model discrepancy formulations, we examine the predictive capability of the calibrated model outside the domain of calibration ($P=2.5$ $\mu$N). 20 validation data points are generated with the applied load $P=3.5$ $\mu$N, and the three-step approach proposed in Section~\ref{section:threeSteps} is implemented. A graphical comparison between the validation data and the calibrated model predictions ($M_i=G+\delta_i, i=0,1,2,3,4$) is shown in Fig.~\ref{figure:predictionVAL-NumExp-1-1load} (a)-(e), where the solid lines represent mean prediction and the dashed lines are $90\%$ probability bounds.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1.0\textwidth]{PredictionWithDelta_VAL_NumExp1_1load.pdf}
+\caption{Comparison between the predictions of calibrated beam model and validation data}
+\label{figure:predictionVAL-NumExp-1-1load}
+\end{figure}
+
+It is interesting to observe from Fig.~\ref{figure:predictionVAL-NumExp-1-1load} that the predictions $M_3$ and $M_4$ are outperformed by the other three in the validation domain, although $M_3$ and $M_4$ include better estimations of $E$ and more accurate assumptions on model discrepancy. The reason why $M_3$ and $M_4$ fail to match the validation data is that $\delta_3$ and $\delta_4$ only depend on $x$, whereas the actual $\delta$ is a function of both $x$ and $P$. Thus, when we extrapolate the model from the calibration domain ($P=2.5$ $\mu$N) to the validation domain ($P=3.5$ $\mu$N), $\delta_3$ and $\delta_4$ are no longer good representations of model discrepancy. Since the Euler-Bernoulli model even with the true value of $E$ has significant errors as shown in Fig.~\ref{figure:discrepancyPlot}, inaccurate estimation of the model error will not be able to correct the model prediction. In contrast, calibration without $\delta$ or with a simple formulation of $\delta$ may produce a model with relatively small errors (e.g., $\delta_{ls}$ in Fig.~\ref{figure:discrepancyPlot}), and the prediction is more sensitive to the physics model than to the model discrepancy function $\delta$. Consequently, we may see more consistent performance from the models calibrated with simple $\delta$ or without $\delta$ given that the behavior of the physical quantity of interest does not change dramatically outside the calibration domain (e.g., from linear to highly nonlinear). 
+
+Table~\ref{table:overallRM-NumExp-1-1load} lists the values of the overall validation metric $\mu_{r}$ computed with the tolerance level $\epsilon=0.75$ $\mu$m for the model predictions plotted in Fig.~\ref{figure:predictionVAL-NumExp-1-1load}. The model calibrated with $\delta_1$ (constant bias) is found to have the highest value of reliability. If obtaining the best possible prediction is the main objective, the constant bias assumption is preferred for model discrepancy in this example. 
+
+
+\begin{table}[h!]
+\caption{Overall reliability of model predictions (calibration data collected with applied load $P=2.5$ $\mu$N)}
+\label{table:overallRM-NumExp-1-1load}
+\begin{center}
+\begin{tabular}{cccccc}
+\hline
+& $M_{0}$ (No $\delta$) & $M_1$ & $M_2$ & $M_3$ & $M_4$ \\
+\hline
+$\mu_r^i$ & 0.50 & 0.66 & 0.55 & 0.36 & 0.34 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+Combining the various posterior distributions of $E$ and $\delta$ via Eq.~\ref{eq:combinePDF} accounts for the uncertainty in model discrepancy formulation. However, the outcome of this combination will be a multi-modal distribution as suggested in Fig.~\ref{figure:marginalE}, which has little physics interpretation. In addition, if high prediction accuracy is desired, none of the validation results showed in Table~\ref{table:overallRM-NumExp-1-1load} would be satisfying. In such cases, we need to look for possible improvement of the model discrepancy formulation in order to reduce the model form uncertainty. In this example, the direction of improvement is apparent, since the validation results suggest that the model discrepancy also depends on the applied load $P$. We can modify $\delta_3$ and $\delta_4$ so that their mean and variance/covariance functions are also load-dependent. Note that data corresponding to multiple load values are needed in order to identify the load-dependent model discrepancy. For the purpose of illustration, another 20 data points are generated with $P=3.0$ $\mu$N in addition to the data set generated with $P=2.5$ $\mu$N. Then, we perform calibration using all the 40 data points and the five model discrepancy formulations ($\delta_3$ and $\delta_4$ are modified). The predictions from the calibrated models are again validated using the data set generated with $P=3.5$ $\mu$N. As showed in Table~\ref{table:overallRM-NumExp-1-2load} and Fig.~\ref{figure:predictionVAL-NumExp-1-2load}, the predictions based on $\delta_3$ and $\delta_4$ have improved notably and are significantly better than the other three options. Since these two formulations lead to similar estimations of the physical parameter $E$ and also similar predictions, selection between them will not make much difference in this example.
+
+
+\begin{table}[h!]
+\caption{Overall reliability of model predictions (calibration data collected with applied load $P=2.5$ $\mu$N, and $P=3.0$ $\mu$N)}
+\label{table:overallRM-NumExp-1-2load}
+\begin{center}
+\begin{tabular}{cccccc}
+\hline
+& $M_{0}$ (No $\delta$) & $M_1$ & $M_2$ & $M_3$ & $M_4$ \\
+\hline
+$\mu_r^i$ & 0.50 & 0.75 & 0.60 & 0.95 & 0.93 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1.0\textwidth]{PredictionWithDelta_VAL_NumExp1_2load.pdf}
+\caption{Comparison between the predictions of calibrated beam model (with improved model discrepancy formulation) and validation data}
+\label{figure:predictionVAL-NumExp-1-2load}
+\end{figure}
+
+%%---------------------------------------------------------------------------------------------
+\subsection{Calibration of dielectric charging parameters using a compact model}\label{subsection:NumExp-2}
+
+Dielectric charging has been identified as an important failure mechanism of radio frequency MEMS switches, causing the switches to either remain stuck or fail to actuate~\citep{Jain2012}. In this section, we will focus on the calibration of a compact dielectric charging model developed in~\citep{Palit2012}. The model has three input variables (voltage $V$, temperature $T$, and time $t$), seven unknown parameters (trap density $N_T$, barrier height $\Phi_B$, capture cross section $\sigma$, Frenkel-Poole (FP) attempt frequency $\gamma$, high frequency dielectric constant $\varepsilon_{INF}$, effective mass $m^*$, and trap activation energy $E_A$), and a single output variable (transient current density $J$). Experiments were conducted on a 200-nm silicon nitride ($\text{Si}_3\text{N}_4$) dielectric with 2 mm*2 mm area for 12 different combinations of $V$ and $T$, and the transient current density was measured at about 190 discrete time points between 0 and 100 seconds. These experiments were repeated four times, and thus a data set with size $n=12*4*190=9120$ is available. Assuming that the measurement error depends only on $V$ and $T$, we can estimate the variance of measurement error for a particular combination of $V$ and $T$ as
+\begin{equation}\label{eq:obsVARfromReplica}
+\sigma_{obs}^2 = \frac{1}{n_1 (n_2-1)} \sum_{j=1}^{n_1} \sum_{i=1}^{n_2} [J_{D,t_j}^{i} - \frac{1}{n_2} \sum_{i=1}^{n_2} (J_{D,t_j}^i) ]^2
+\end{equation}
+where $n_1$ is the number of time points, and $n_2$ is the number of repeated experiments. Note that if Bayesian inference is used to estimate $\sigma_{obs}$, with different formulations of model discrepancy we may obtain different posterior distributions of $\sigma_{obs}$. In such cases, physics domain knowledge on the measurement system as well as subjective judgement will be needed to combine the posterior distributions of $\sigma_{obs}$ into a single distribution so that $\sigma_{obs}$ can be independent of model discrepancy formulation.
+ 
+We again consider the various options of model discrepancy discussed in Section~\ref{section:FormulationsDiscrepancy}, and the same notations are used as in Section~\ref{subsection:NumExp-1} (i.e., $\delta_1$, $\delta_2$, ...). Note that we also include $\delta_5$ as a Gaussian process with non-stationary covariance function. The mean function and variance function of $\delta_3$ are chosen to be linear functions of the model input combined with exponential functions of time as
+\begin{eqnarray}\label{eq:meanAndvariance-NumExp-2}
+&& \mu_{\delta_3} = \phi_1 V + \phi_2 T + \phi_3 t + \phi_4 \exp(\phi_5 t) \nonumber\\
+&& \sigma^2_{\delta_3} = \varphi_0 + \varphi_1 V + \varphi_2 T + \varphi_3 t + \varphi_4 \exp(\varphi_5 t)
+\end{eqnarray}
+The same form of mean function is used in $\delta_4$ and $\delta_5$. We still use a squared exponential function as the covariance function of $\delta_4$, and Eq.~\ref{eq:nonstationaryCovGP} is used as the covariance function of $\delta_5$. Based on the first-order Taylor series expansion-based method developed in Section~\ref{section:identifiability}, a check of identifiability is performed while selecting the form of the mean function $\mu_{\delta_3}$, since the addition of the discrepancy function to the original model may cause non-identifiability. In this example, there are 12 unknown parameters in $G+\mu_{\delta_3}$, i.e., $p=12$, and the corresponding matrix $\boldsymbol{A}$ is full rank, which suggests that the combination of the dielectric model and this mean function is identifiable. In fact, the reason that there is no constant term in the mean function is because the constant term was found to be unidentifiable. 
+
+Note that the model needs to be evaluated at all the calibration experiment input points in order to compute the likelihood function for a given parameter set. Due to limited computational resources, we use only a subset of the available experimental data (40 time points for each combination of $V$ and $T$; total number of data points $=12*40=480$). As discussed in Section~\ref{section:threeSteps}, we further partition the selected data set into two sets (each with $240$ data points), one for calibration and the other for validation. The calibration and validation data points are uniformly distributed in time domain, i.e., for each combination of $V$ and $T$, the points corresponding to time $t_1$, $t_3$, ..., $t_{39}$ belong to the calibration data data, and the remaining 20 points belong to the validation data set. Therefore, there is no significant extrapolation from the calibration domain in this example.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1.0\textwidth]{marginalPostPDF_all_NumExp2.pdf}
+\caption{Marginal PDFs of dielectric charging model parameters}
+\label{figure:marginalDCmodel}
+\end{figure}
+
+Uniform priors are used for all the calibration parameters, and the ranges of the 7 physical parameters are listed in Table~\ref{table:priorRangeDielectricChargingParams}. 500,000 MCMC samples are collected and the fitted marginal posterior PDFs of the dielectric charging model parameters are shown in Fig.~\ref{figure:marginalDCmodel}. Note that calibration using $\delta_1$ cannot be implemented in this example because the likelihood function remains zero for any set of parameters, which suggests that the difference between the model and data is input-dependent and the assumption of constant model error is not valid. It can be observed that the various choices of model discrepancy give significantly different posteriors for some parameters. However, it is not clear which option is better until we perform the validation step. 
+
+
+
+\begin{table}[h!]
+\caption{Prior ranges of dielectric charging model parameters}
+\label{table:priorRangeDielectricChargingParams}
+\begin{center}
+\begin{tabular}{ccccccc}
+\hline
+$\log(N_T)$ & $\Phi_B$ & $\log(\sigma)$ & $\log(\gamma)$ & $\varepsilon_{INF}$ & $m*$ & $E_A$ \\
+\hline
+[55.3, 61.5] & [0.8, 1.4] & [-55.3,-50.6] & [16.1, 25.3] & [0.1, 15.0] & [0.01, 1.0] & [0.01, 1.0] \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+
+
+The aforementioned validation data set (240 data points) is used to assess the predictive capability of the calibrated models. The reliability metrics are shown in Table~\ref{table:overallRM-NumExp-2}. For the purpose of illustration, we also show a graphical comparison between model predictions and data in Fig.~\ref{figure:predictionVAL-NumExp-2} (a)-(e). Due to the limit of space, only the plots corresponding to a single combination of $V$ and $T$ ($V=20$V and $T=360$K) are shown.
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1.0\textwidth]{PredictionWithDelta_VAL_NumExp2.pdf}
+\caption{Comparison between the predictions of calibrated dielectric charging model and data}
+\label{figure:predictionVAL-NumExp-2}
+\end{figure}
+
+The graphical comparison and the validation metric suggest that calibration without $\delta$ or with $\delta_3$ (input-dependent Gaussian random variables) gives the best posterior prediction of current density. However, it can be observed from Fig.~\ref{figure:predictionVAL-NumExp-2} that the $95\%$ probability bounds (red dashed line) of $M_0$ and $M_3$ are both small, whereas the probability bounds of $M_2$, $M_4$, and $M_5$ give better coverage of the validation data. Thus, it is preferable to conduct the third step of the proposed method in Section~\ref{section:combinationStep}, which combines the various posteriors of model parameters and model discrepancy based on the validation results. The model prediction based on the combined distribution of model parameters and $\delta$ is shown in Fig.~\ref{figure:predictionVAL-NumExp-2} (f), of which the probability bound also gives a good coverage of the data.
+
+\begin{table}[h!]
+\caption{Overall reliability of model predictions}
+\label{table:overallRM-NumExp-2}
+\begin{center}
+\begin{tabular}{ccccccc}
+\hline
+& $M_{0}$ (No $\delta$) & $M_1$ & $M_2$ & $M_3$ & $M_4$ & $M_5$ \\
+\hline
+$\mu_r^i$ & 0.86 & - & 0.58 & 0.82 & 0.37 & 0.36 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+
+%---------------------------------------------------------------------------------------------
+%---------------------------------------------------------------------------------------------
+\subsection{Discussion}
+In this section, we demonstrated via two examples how the various choices of model discrepancy function ($\delta$) can affect the calibration result, and how the three-step approach proposed in Section~\ref{section:threeSteps} can help the selection of the appropriate discrepancy formulation. In the first example, we showed that calibration with inaccurate assumption on $\delta$ can lead to biased estimation of physical parameters. However, posterior predictions based on simpler and less accurate assumptions of $\delta$ can still match data well outside the calibration domain. This is because the prediction becomes more sensitive to $\delta$ if complicated formulations (i.e., $\delta_3$ and $\delta_4$) are used, and thus the capability of $\delta$ to extrapolate from the calibration domain to prediction domain becomes crucial for achieving accurate predictions. Significant improvement in prediction accuracy was observed after we modified $\delta_3$ and $\delta_4$ by introducing the dependence on applied load $P$. In contrast, prediction based on a simpler formulation of $\delta$ tends to rely more on the physics model, which may have better extrapolation capability than a purely statistical term $\delta$. In the second example, a complicated physics model with little information regarding the model error is calibrated with experimental data. We applied the first-order Taylor series expansion-based method in order to avoid parameter non-identifiability due to the addition of a model discrepancy function. We also showed that the various options of $\delta$ can lead to different calibration results, and the proposed three-step approach is implemented to combine the posterior distributions of model parameters and model discrepancy, which leads to accurate prediction while also accounting for the uncertainty in the form of model error.
+
+%---------------------------------------------------------------------------------------------
+%---------------------------------------------------------------------------------------------
+\section{Conclusion}
+
+This paper investigated various formulations of the model discrepancy function for use in Bayesian calibration. A first-order Taylor series expansion-based method has been developed to determine the identifiability of model parameters, especially when one tries to add a model discrepancy function to a model that does not have a closed-form analytical expression. The two numerical examples show that different choices of model discrepancy formulation can result in significantly different calibration results, and that the estimation of physical parameters may be biased if the formulation is over-simplified. It is also observed that the model calibrated using simpler formulations of $\delta$ may outperform the one calibrated using more complicated formulations outside the calibration domain. In order to facilitate the selection of model discrepancy formulation and also accommodate the uncertainty due to this selection, we developed a three-step approach using a reliability-based model validation metric and Bayesian model averaging. This approach combines the posterior probability distributions of model parameters and $\delta$ resulting from the various options of $\delta$ into a single distribution, which is useful especially when the various options of $\delta$ have similar performance. Future research efforts may include: (1) examining more options of model discrepancy, and investigating the extrapolation capability of model discrepancy to higher level of system
+hierarchy, (2) extending the first-order Taylor series expansion-based method to investigate the identifiability of models containing hyperparameters (e.g., when the model discrepancy is approximated using a
+Gaussian process, the coefficients of the covariance function need to be taken into account).
+
+
+
+%---------------------------------------------------------------------------------------------
+\section*{Acknowledgment}
+This paper is based upon research supported by the Department of Energy [National Nuclear Security Administration] under Award Number DE-FC52-08NA28617 to Purdue University (Principal Investigator: Prof. Jayathi Murthy, Deputy Director: Prof. Alejandro Strachan), and subaward to Vanderbilt University. The support is gratefully acknowledged. The authors also thank the following personnel at the U. S. DOE (NNSA) PSAAP Center for Prediction of Reliability, Integrity and Survivability of Microsystems (PRISM) at Purdue University for providing the dielectric charging compact model, experimental data, and valuable discussions: Prof. Muhammad Alam, Sambit Palit, Prof. Alejandro Strachan, Dr. Lin Sun, and Ravi Vedula. The numerical examples in this paper were conducted in part using the resources of the Advanced Computing Center for Research and Education at Vanderbilt University, Nashville, TN.
+
+\singlespacing
+%% References with bibTeX database:
+\bibliographystyle{elsarticle-num}
+\bibliography{Research}
+
+
+\end{document}
